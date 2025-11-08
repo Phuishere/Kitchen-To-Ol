@@ -12,5 +12,6 @@ python crawl_web_script/main.py
 - For Linux shi, look on Google, but the gist is the same (change the effing ```"./venv/Scripts/activate.bat"``` to something Penguin-like).
 ### 2. Trivia:
 - Run ```.ipynb``` file to avoid the loss of links when the file crashes. It is made carefully and steadfastly (as I am obviously so great and mightiful, whatever). However, lest your peasant's pc or Internet got some error, you wouldn't be destroying your own pc out of wroth.
+- Some changes regarding the Google Image's class would occur. Use F12 to check for them if there are some errors (throw this to the high elf called ChatGPT to ask for guidance).
 ## Other things:
 - Nothing for now. Enjoy it.
