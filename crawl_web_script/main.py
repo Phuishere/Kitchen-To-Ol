@@ -190,15 +190,15 @@ def main():
 
     wd = webdriver.Chrome(service=service, options=options)
 
-    for query in queries:
-        try:
+    try:
+        for query in queries:
             img_urls = get_images_from_google(wd, query, max_images=max_images, max_scroll=10, max_non_addition=max_non_addition, time_pause=time_pause, verbose=verbose)
 
             query = query.replace(" ", "_")
             download_dir = os.path.join(BASE, "resources", query)
             
             # Image link file
-            image_link_file = os.path.join(BASE, "resources/downloaded_images.txt")
+            image_link_file = os.path.join(download_dir, "downloaded_images.txt")
             try:
                 with open(image_link_file, "x"):
                     print(f"✅ Created link file in: {image_link_file}")
@@ -233,13 +233,12 @@ def main():
                     with open(image_link_file, "a") as fa:
                         fa.writelines([url+"\n"])
                 time.sleep(time_pause)
-        except KeyboardInterrupt:
-            print("🎯 Exitting program - - -")
-            wd.quit()
-        finally:
-            # 10m 45.9 for 100 images
-            print("🎯 Program ran successfully! - - -")
-            wd.quit()
+    except KeyboardInterrupt:
+        print("🎯 Exitting program - - -")
+    finally:
+        # 10m 45.9 for 100 images
+        print("🎯 Program ending! - - -")
+        wd.quit()
 
 # Use it and download images
 if __name__ == "__main__":
