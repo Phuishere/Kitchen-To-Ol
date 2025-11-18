@@ -1,11 +1,13 @@
 '''
 To run this:
 python crawl_web_script/main.py
+python Kitchen-To-Ol/crawl_web_script/main.py
 '''
 
 import os
 import time
 import io
+import argparse
 import requests
 from PIL import Image
 from selenium import webdriver
@@ -20,29 +22,16 @@ from selenium.common.exceptions import (
 )
 
 # Configuration
-BASE = "E:/projects/_full_fledge/Kitchen-Tools-Project"
-DOWNLOAD_DIR = os.path.join(BASE, "resources", "crawled")
-CHROME_DRIVER_PATH = "E:/projects/_full_fledge/Kitchen-Tools-Project/resources/chromedriver-win64/chromedriver.exe"
+BASE = "."
+CHROME_DRIVER_PATH = os.path.join(BASE, "resources/chromedriver-win64/chromedriver.exe")
 
+# Search URL
 SEARCH_URL = ("https://www.google.com/search?"
-              "q={query}&tbm=isch") # basic Google Images query url
-
-MAX_IMAGES = 400
-SCROLL_PAUSE = 1.0 # seconds
-IMAGE_URLS = set()
-
-# Setup webdriver
-service = Service(CHROME_DRIVER_PATH)
-options = webdriver.ChromeOptions()
-options.add_argument("--log-level=3")
-options.add_experimental_option("excludeSwitches", ["enable-logging"])
-options.add_experimental_option("useAutomationExtension", False)
-
-wd = webdriver.Chrome(service=service, options=options)
+            "q={query}&tbm=isch") # basic Google Images query url
 
 # Utils
-def download_image(url: str, filename: str, download_path: str = DOWNLOAD_DIR):
-    os.makedirs(download_path, exist_ok=True)
+def download_image(url: str, filename: str, download_dir: str, verbose: bool = True) -> bool:
+    os.makedirs(download_dir, exist_ok=True)
     try:
         image_content = requests.get(url, timeout=10).content
         image_file = io.BytesIO(image_content)
@@ -50,18 +39,22 @@ def download_image(url: str, filename: str, download_path: str = DOWNLOAD_DIR):
         # Convert mode if needed
         if image.mode in ("RGBA", "P"):
             image = image.convert("RGB")
-        file_path = os.path.join(download_path, filename)
+        file_path = os.path.join(download_dir, filename)
         image.save(file_path, "JPEG")
-        print(f"✅ Success downloaded file {filename}")
+        if verbose:
+            print(f"✅ Success downloaded file {filename}")
+        return True
     except Exception as e:
-        print(f"❌ FAILED: Could not download {filename} - {e}")
+        if verbose:
+            print(f"❌ FAILED: Could not download {filename} - {e}")
+        return False
 
-def scroll_down(scroll_pause = SCROLL_PAUSE):
+def scroll_down(wd: webdriver.Chrome, time_pause: float):
     wd.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    time.sleep(scroll_pause)
+    time.sleep(time_pause)
 
 # Main scraping function
-def get_images_from_google(query: str, max_scroll: int = 4, max_images: int = 100, max_non_addition: int = 1000):
+def get_images_from_google(wd: webdriver.Chrome, query: str, max_scroll: int = 4, max_images: int = 100, max_non_addition: int = 1000, time_pause: int = 1, verbose: bool = True):
     url = f"https://www.google.com/search?q={query.replace(' ', '+')}&tbm=isch"
     wd.get(url)
 
@@ -74,8 +67,9 @@ def get_images_from_google(query: str, max_scroll: int = 4, max_images: int = 10
     skips = 0
     current_scroll = 0
     non_addition_count = 0
+    img_urls = set()
     while current_scroll < max_scroll:
-        scroll_down()
+        scroll_down(wd, time_pause)
         current_scroll += 1
 
         if non_addition_count >= max_non_addition:
@@ -98,20 +92,20 @@ def get_images_from_google(query: str, max_scroll: int = 4, max_images: int = 10
                 # kiểm tra kích thước
                 natural_width = wd.execute_script("return arguments[0].naturalWidth;", img)
                 natural_height = wd.execute_script("return arguments[0].naturalHeight;", img)
-                # print("Natural size:", natural_width, "x", natural_height)
 
                 if natural_width >= 100 and natural_height >= 100:
                     wd.execute_script("arguments[0].scrollIntoView({block:'center'});", img)
                     img.click()
-                    time.sleep(1.5)
+                    time.sleep(time_pause)
 
                     big_img = wd.find_elements(By.CSS_SELECTOR, "img.sFlh5c.FyHeAf.iPVvYb")
                     try:
-                        src = big_img[0].get_attribute("src")
+                        src = big_img[-1].get_attribute("src")
                     except IndexError as e:
-                        print(f"Out of Index Error: big_img has {len(big_img)} elements.")
-                    IMAGE_URLS.add(src)
-                    print(f"✅ Added full-res image ({len(IMAGE_URLS)} images; {current_scroll} scrolls): {src}")
+                        if verbose:
+                            print(f"Out of Index Error: big_img has {len(big_img)} elements.")
+                    img_urls.add(src)
+                    print(f"✅ Added full-res image ({len(img_urls)} images; {current_scroll} scrolls): {src}")
                     
                     # Add skips and Reset non-addition
                     skips += 1
@@ -119,28 +113,127 @@ def get_images_from_google(query: str, max_scroll: int = 4, max_images: int = 10
                 else:
                     skips += 1
                     non_addition_count += 1
-                    print("⚠️ Skipped small thumbnail")
+                    if verbose:
+                        print("⚠️ Skipped small thumbnail")
             except Exception as e:
                 skips += 1
                 non_addition_count += 1
-                print("❌ Error loading image -", e)
+                if verbose:
+                    print("❌ Error loading image -", e)
 
-        if len(IMAGE_URLS) >= max_images:
+        if len(img_urls) >= max_images:
             break
 
-        print(f"\n🎯 Total collected: {len(IMAGE_URLS)}")
-    return IMAGE_URLS
+        print(f"\n🎯 Total collected (query: '{query}'): {len(img_urls)}")
+    return img_urls
+
+def main():
+    # Parser
+    '''
+    Example run:
+        
+    '''
+    parser = argparse.ArgumentParser(
+        prog='Kitchen-To-Ol Image Scraping',
+        description='A simple program that crawl images.',
+        epilog='Thanks for using my program!'
+    )
+    parser.add_argument(
+        '--nimg', type=int,
+        metavar='nimg',
+        default=10000, # Default
+        help='Max number of images for each query (Default: 1000).'
+    )
+    parser.add_argument(
+        '--tpause', type=float,
+        metavar='tpause',
+        default=1.0,
+        help='Time pause for queries (Default: 1.0s).'
+    )
+    parser.add_argument(
+        '--merror', type=float,
+        metavar='merror',
+        default=10000,
+        help='Time pause for queries (Default: 1.0s).'
+    )
+    parser.add_argument(
+        'queries',
+        metavar ='Q',
+        type = str,
+        nargs ='+',
+        help ='Image queries that you would like to use!'
+    )
+
+    args = parser.parse_args()
+    max_non_addition = args.merror
+    time_pause = args.tpause
+    max_images = args.nimg
+    queries = args.queries
+    
+    # If no queries input, return
+    if not queries:
+        return
+
+    # Setup webdriver
+    service = Service(CHROME_DRIVER_PATH)
+    options = webdriver.ChromeOptions()
+    options.add_argument("--log-level=3")
+    options.add_experimental_option("excludeSwitches", ["enable-logging"])
+    options.add_experimental_option("useAutomationExtension", False)
+
+    wd = webdriver.Chrome(service=service, options=options)
+
+    for query in queries:
+        try:
+            img_urls = get_images_from_google(wd, query, max_images=max_images, max_scroll=10, max_non_addition=max_non_addition, time_pause=time_pause)
+
+            query = query.replace(" ", "_")
+            download_dir = os.path.join(BASE, "resources", query)
+            
+            # Image link file
+            image_link_file = os.path.join(BASE, "resources/downloaded_images.txt")
+            try:
+                with open(image_link_file, "x"):
+                    print(f"✅ Created link file in: {image_link_file}")
+                    existing_urls = []
+            except:
+                print(f"✅ Downloaded images existing in: {image_link_file}")
+                with open(image_link_file, "r") as fr:
+                    existing_urls = [url.strip("\n") for url in fr.readlines()]
+                    
+            # Download
+            print(f"The number of image links: {len(img_urls)}.")
+            for idx, url in enumerate(img_urls):
+                # Get image name
+                if 0 <= idx <= 9:
+                    idx_str = f"00000{idx}"
+                if 10 <= idx <= 99:
+                    idx_str = f"0000{idx}"
+                if 100 <= idx <= 999:
+                    idx_str = f"000{idx}"
+                if 1000 <= idx <= 9999:
+                    idx_str = f"00{idx}"
+                if 10000 <= idx <= 99999:
+                    idx_str = f"0{idx}"
+                if 100000 <= idx <= 999999:
+                    idx_str = f"{idx}"
+                
+                # Check if url has existed
+                if url in existing_urls:
+                    continue
+                success = download_image(url, f"{query}_{idx_str}.jpg", download_dir=download_dir)
+                if success:
+                    with open(image_link_file, "a") as fa:
+                        fa.writelines([url+"\n"])
+                time.sleep(time_pause)
+        except KeyboardInterrupt:
+            print("🎯 Exitting program - - -")
+            wd.quit()
+        finally:
+            # 10m 45.9 for 100 images
+            print("🎯 Program ran successfully! - - -")
+            wd.quit()
 
 # Use it and download images
 if __name__ == "__main__":
-    try:
-        query = "wooden spoon"
-        urls = get_images_from_google(query, max_images=400, max_scroll=10)
-    finally:
-        # 10m 45.9 for 100 images
-        wd.quit()
-
-    print(f"The number of image links: {len(IMAGE_URLS)}.")
-    for idx, url in enumerate(IMAGE_URLS):
-        download_image(url, f"{idx}.jpg")
-        time.sleep(1)
+    main()
