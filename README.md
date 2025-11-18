@@ -11,7 +11,8 @@ pip install -r requirements.txt
 # Or: pip install -r Kitchen-To-Ol/requirements.txt
 ```
 - To run (in Kitchen-To-Ol root dir):
-python crawl_web_script/main.py
+```
+python crawl_web_script/main.py --nimg 1000 "muỗng gỗ" "wooden spoon" "wooden spoons for cooking"
 ```
 - For Linux shi, look on Google, but the gist is the same (change the effing ```"./venv/Scripts/activate.bat"``` to something Penguin-like).
 ### 2. Trivia:

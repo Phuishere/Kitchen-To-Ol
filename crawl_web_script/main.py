@@ -131,7 +131,7 @@ def main():
     # Parser
     '''
     Example run:
-        
+        python crawl_web_script/main.py "muỗng gỗ" "wooden spoon" "wooden spoons for cooking"
     '''
     parser = argparse.ArgumentParser(
         prog='Kitchen-To-Ol Image Scraping',
@@ -141,19 +141,25 @@ def main():
     parser.add_argument(
         '--nimg', type=int,
         metavar='nimg',
-        default=10000, # Default
+        default=1000, # Default
         help='Max number of images for each query (Default: 1000).'
     )
     parser.add_argument(
         '--tpause', type=float,
         metavar='tpause',
-        default=1.0,
+        default=1.0, # Default
         help='Time pause for queries (Default: 1.0s).'
     )
     parser.add_argument(
         '--merror', type=float,
         metavar='merror',
-        default=10000,
+        default=10000, # Default
+        help='Time pause for queries (Default: 1.0s).'
+    )
+    parser.add_argument(
+        '--verbose', type=bool,
+        metavar='verbose',
+        default=False, # Default
         help='Time pause for queries (Default: 1.0s).'
     )
     parser.add_argument(
@@ -168,6 +174,7 @@ def main():
     max_non_addition = args.merror
     time_pause = args.tpause
     max_images = args.nimg
+    verbose = args.verbose
     queries = args.queries
     
     # If no queries input, return
@@ -185,7 +192,7 @@ def main():
 
     for query in queries:
         try:
-            img_urls = get_images_from_google(wd, query, max_images=max_images, max_scroll=10, max_non_addition=max_non_addition, time_pause=time_pause)
+            img_urls = get_images_from_google(wd, query, max_images=max_images, max_scroll=10, max_non_addition=max_non_addition, time_pause=time_pause, verbose=verbose)
 
             query = query.replace(" ", "_")
             download_dir = os.path.join(BASE, "resources", query)
@@ -221,7 +228,7 @@ def main():
                 # Check if url has existed
                 if url in existing_urls:
                     continue
-                success = download_image(url, f"{query}_{idx_str}.jpg", download_dir=download_dir)
+                success = download_image(url, f"{query}_{idx_str}.jpg", download_dir=download_dir, verbose=verbose)
                 if success:
                     with open(image_link_file, "a") as fa:
                         fa.writelines([url+"\n"])
