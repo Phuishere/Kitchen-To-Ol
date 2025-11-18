@@ -41,8 +41,7 @@ def download_image(url: str, filename: str, download_dir: str, verbose: bool = T
             image = image.convert("RGB")
         file_path = os.path.join(download_dir, filename)
         image.save(file_path, "JPEG")
-        if verbose:
-            print(f"✅ Success downloaded file {filename}")
+        print(f"✅ Success downloaded file {filename}.")
         return True
     except Exception as e:
         if verbose:
@@ -73,7 +72,8 @@ def get_images_from_google(wd: webdriver.Chrome, query: str, max_scroll: int = 4
         current_scroll += 1
 
         if non_addition_count >= max_non_addition:
-            print(f"⚠️ Max Time Out for Non Addition: {non_addition_count}!")
+            if verbose:
+                print(f"⚠️ Max Time Out for Non Addition: {non_addition_count}!")
             break
 
         WebDriverWait(wd, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "img.YQ4gaf")))
@@ -85,7 +85,8 @@ def get_images_from_google(wd: webdriver.Chrome, query: str, max_scroll: int = 4
                 img = thumbnails[c_idx]
             except:
                 non_addition_count += 1
-                print(f"⚠️ Skip index {c_idx} / {len(thumbnails)}!")
+                if verbose:
+                    print(f"⚠️ Skip index {c_idx} / {len(thumbnails)}!")
                 continue
 
             try:
@@ -103,18 +104,27 @@ def get_images_from_google(wd: webdriver.Chrome, query: str, max_scroll: int = 4
                         src = big_img[-1].get_attribute("src")
                     except IndexError as e:
                         if verbose:
-                            print(f"Out of Index Error: big_img has {len(big_img)} elements.")
-                    img_urls.add(src)
-                    print(f"✅ Added full-res image ({len(img_urls)} images; {current_scroll} scrolls): {src}")
+                            print(f"⚠️ Out of Index Error: big_img has {len(big_img)} elements.")
                     
-                    # Add skips and Reset non-addition
-                    skips += 1
-                    non_addition_count = 0
+                    # Check if the number of urls stays the same
+                    len_before = len(img_urls)
+                    img_urls.add(src)
+                    len_current = len(img_urls)
+                    if len_before == len_current:
+                        skips += 1
+                        non_addition_count += 1
+                        if verbose:
+                            print(f"⚠️ Repeating image: .")
+                    else:
+                        # Add skips and Reset non-addition
+                        skips += 1
+                        non_addition_count = 0
+                        print(f"✅ Added full-res image ({len(img_urls)} images; {current_scroll} scrolls): {src}")
                 else:
                     skips += 1
                     non_addition_count += 1
                     if verbose:
-                        print("⚠️ Skipped small thumbnail")
+                        print("⚠️ Skipped small thumbnail!")
             except Exception as e:
                 skips += 1
                 non_addition_count += 1
@@ -201,8 +211,10 @@ def main():
         for query in queries:
             img_urls = get_images_from_google(wd, query, max_images=max_images, max_scroll=max_scroll, max_non_addition=max_non_addition, time_pause=time_pause, verbose=verbose)
 
-            query = query.replace(" ", "_")
-            download_dir = os.path.join(BASE, "resources", query)
+            # Get query filename str version and download dir
+            crawl_dir_name = "crawl_" + query.replace(" ", "_")
+            download_dir = os.path.join(BASE, "resources", crawl_dir_name)
+            os.makedirs(download_dir, exist_ok=True)
             
             # Image link file
             image_link_file = os.path.join(download_dir, "downloaded_images.txt")
