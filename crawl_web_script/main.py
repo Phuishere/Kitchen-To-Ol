@@ -139,20 +139,26 @@ def main():
         epilog='Thanks for using my program!'
     )
     parser.add_argument(
-        '--nimg', type=int,
-        metavar='nimg',
+        '--n_img', type=int,
+        metavar='n_img',
         default=1000, # Default
         help='Max number of images for each query (Default: 1000).'
     )
     parser.add_argument(
-        '--tpause', type=float,
-        metavar='tpause',
+        '--time_pause', type=float,
+        metavar='time_pause',
         default=1.0, # Default
         help='Time pause for queries (Default: 1.0s).'
     )
     parser.add_argument(
-        '--merror', type=float,
-        metavar='merror',
+        '--max_scroll', type=float,
+        metavar='max_scroll',
+        default=25, # Default
+        help='Max time of scrolling (Default: 25 scrolls).'
+    )
+    parser.add_argument(
+        '--max_error', type=float,
+        metavar='max_error',
         default=10000, # Default
         help='Time pause for queries (Default: 1.0s).'
     )
@@ -171,10 +177,11 @@ def main():
     )
 
     args = parser.parse_args()
-    max_non_addition = args.merror
-    time_pause = args.tpause
-    max_images = args.nimg
+    max_non_addition = args.max_error
+    time_pause = args.time_pause
+    max_images = args.n_img
     verbose = args.verbose
+    max_scroll = args.max_scroll
     queries = args.queries
     
     # If no queries input, return
@@ -192,7 +199,7 @@ def main():
 
     try:
         for query in queries:
-            img_urls = get_images_from_google(wd, query, max_images=max_images, max_scroll=10, max_non_addition=max_non_addition, time_pause=time_pause, verbose=verbose)
+            img_urls = get_images_from_google(wd, query, max_images=max_images, max_scroll=max_scroll, max_non_addition=max_non_addition, time_pause=time_pause, verbose=verbose)
 
             query = query.replace(" ", "_")
             download_dir = os.path.join(BASE, "resources", query)
