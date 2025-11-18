@@ -13,11 +13,11 @@ pip install -r requirements.txt
 - Command (Window):
 ```
 "./venv/Scripts/activate.bat"
-python crawl_web_script/main.py ----nimg 1000 "muỗng gỗ" "wooden spoon" "wooden spoons for cooking"
+python crawl_web_script/main.py --max_scroll 25 --n_img 1000 "muỗng gỗ" "wooden spoon" "wooden spoons for cooking"
 ```
 - Guide:
     + Use "python crawl_web_script/main.py -h" to get more info
-    + 
+    + Overall, change the ```1000``` on the command above to change the number of image
 - For Linux shi, look on Google, but the gist is the same (change the effing ```"./venv/Scripts/activate.bat"``` to something Penguin-like).
 ### 2. Trivia:
 - Run ```.ipynb``` file to avoid the loss of links when the file crashes. It is made carefully and steadfastly (as I am obviously so great and mightiful, whatever). However, lest your peasant's pc or Internet got some error, you wouldn't be destroying your own pc out of wroth.

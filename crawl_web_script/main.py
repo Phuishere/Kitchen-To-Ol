@@ -141,7 +141,7 @@ def main():
     # Parser
     '''
     Example run:
-        python crawl_web_script/main.py "muỗng gỗ" "wooden spoon" "wooden spoons for cooking"
+        python crawl_web_script/main.py --max_scroll 25 --n_img 1000 "muỗng gỗ" "wooden spoon" "wooden spoons for cooking"
     '''
     parser = argparse.ArgumentParser(
         prog='Kitchen-To-Ol Image Scraping',
